@@ -216,7 +216,7 @@ export const SquishyCanvas: React.FC<SquishyCanvasProps> = ({
       if (deformationEngineRef.current) {
         const { shouldPlayRelease } = deformationEngineRef.current.update(dt);
         if (shouldPlayRelease && config.soundEnabled) {
-          asmrAudio.playRelease(2.5, config.materialType);
+          asmrAudio.playRelease(2.5, config.materialType, config.soundProfile);
         }
       }
 
@@ -383,7 +383,7 @@ export const SquishyCanvas: React.FC<SquishyCanvasProps> = ({
           particleSystemRef.current.emitPuff(new THREE.Vector3(0, 0, 0), 18, config.color);
         }
         if (config.soundEnabled) {
-          asmrAudio.playSquish(0.95, 'squish', config.materialType, 0);
+          asmrAudio.playSquish(0.95, 'squish', config.materialType, 0, config.soundProfile);
         }
         onSquishActivity(1.0);
 
@@ -464,7 +464,7 @@ export const SquishyCanvas: React.FC<SquishyCanvasProps> = ({
         particleSystemRef.current.emitPuff(hit.point, 12, config.color);
       }
       if (config.soundEnabled) {
-        asmrAudio.playSquish(0.82, 'squish', config.materialType, panX);
+        asmrAudio.playSquish(0.82, 'squish', config.materialType, panX, config.soundProfile);
       }
       onSquishActivity(0.65);
       if (navigator.vibrate) navigator.vibrate(20);
@@ -474,7 +474,7 @@ export const SquishyCanvas: React.FC<SquishyCanvasProps> = ({
         particleSystemRef.current.emitPuff(hit.point, 8, config.color);
       }
       if (config.soundEnabled) {
-        asmrAudio.playSquish(0.72, 'poke', config.materialType, panX);
+        asmrAudio.playSquish(0.72, 'poke', config.materialType, panX, config.soundProfile);
       }
       onSquishActivity(0.5);
       if (navigator.vibrate) navigator.vibrate(12);
@@ -574,12 +574,12 @@ export const SquishyCanvas: React.FC<SquishyCanvasProps> = ({
       const dragLocal = new THREE.Vector3(dx * 0.015, -dy * 0.015, 0);
       deformationEngineRef.current?.updateContact(hitPointRef.current, dragLocal, 1.0 + downwardDrag * 0.004);
 
-      if (squishAccumulatorRef.current > 30) {
+      if (squishAccumulatorRef.current > 48) {
         squishAccumulatorRef.current = 0;
         if (config.soundEnabled) {
-          asmrAudio.playSquish(0.65, 'squish', config.materialType, panX);
+          asmrAudio.playSquish(0.48, 'squish', config.materialType, panX, config.soundProfile);
         }
-        onSquishActivity(0.4);
+        onSquishActivity(0.35);
       }
     } else if (mode === 'poke') {
       const hit = getRaycastIntersection(e.clientX, e.clientY);
@@ -589,15 +589,15 @@ export const SquishyCanvas: React.FC<SquishyCanvasProps> = ({
         const dragLocal = new THREE.Vector3(dx * 0.02, -dy * 0.02, 0);
         deformationEngineRef.current?.updateContact(localHit, dragLocal, 1.2);
 
-        if (squishAccumulatorRef.current > 26) {
+        if (squishAccumulatorRef.current > 40) {
           squishAccumulatorRef.current = 0;
           if (particleSystemRef.current) {
-            particleSystemRef.current.emitPuff(hit.point, 5, config.color);
+            particleSystemRef.current.emitPuff(hit.point, 4, config.color);
           }
           if (config.soundEnabled) {
-            asmrAudio.playSquish(0.55, 'poke', config.materialType, panX);
+            asmrAudio.playSquish(0.42, 'poke', config.materialType, panX, config.soundProfile);
           }
-          onSquishActivity(0.35);
+          onSquishActivity(0.3);
         }
       }
     } else if (mode === 'stretch') {
@@ -612,12 +612,12 @@ export const SquishyCanvas: React.FC<SquishyCanvasProps> = ({
       const pullVector = new THREE.Vector3(dx * 0.03, -dy * 0.03, 0);
       deformationEngineRef.current?.updateContact(hitPointRef.current, pullVector, 1.2);
 
-      if (squishAccumulatorRef.current > 32) {
+      if (squishAccumulatorRef.current > 50) {
         squishAccumulatorRef.current = 0;
         if (config.soundEnabled) {
-          asmrAudio.playStretch(0.6, panX);
+          asmrAudio.playStretch(0.45, panX);
         }
-        onSquishActivity(0.35);
+        onSquishActivity(0.3);
       }
     }
   };
@@ -643,7 +643,7 @@ export const SquishyCanvas: React.FC<SquishyCanvasProps> = ({
     deformationEngineRef.current?.endContact();
 
     if (config.soundEnabled) {
-      asmrAudio.playRelease(2.5, config.materialType);
+      asmrAudio.playRelease(2.5, config.materialType, config.soundProfile);
     }
   };
 

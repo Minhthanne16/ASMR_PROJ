@@ -16,13 +16,14 @@ import { asmrAudio } from './audio/asmrAudio';
 export const App: React.FC = () => {
   // Squishy Configuration State
   const [config, setConfig] = useState<SquishyConfig>({
-    shape: 'bun',
-    color: SHAPE_METADATA.bun.defaultColor,
+    shape: 'tomato',
+    color: SHAPE_METADATA.tomato.defaultColor,
     materialType: 'matte',
     expression: 'happy',
     recoverySpeed: 'slow',
     soundEnabled: true,
-    soundVolume: 0.85
+    soundVolume: 0.85,
+    soundProfile: 'slow_rise_whisper'
   });
 
   // Interaction Mode State

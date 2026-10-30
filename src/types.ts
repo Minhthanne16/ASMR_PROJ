@@ -8,6 +8,8 @@ export type InteractionMode = 'poke' | 'squish' | 'stretch' | 'rotate';
 
 export type RecoverySpeed = 'super_slow' | 'slow' | 'medium' | 'fast';
 
+export type ASMRSoundProfile = 'slow_rise_whisper' | 'crunchy' | 'soft_foam';
+
 export interface BackgroundConfig {
   type: 'color' | 'image';
   color: string;
@@ -23,6 +25,7 @@ export interface SquishyConfig {
   recoverySpeed: RecoverySpeed;
   soundEnabled: boolean;
   soundVolume: number;
+  soundProfile: ASMRSoundProfile;
 }
 
 export interface StressStats {

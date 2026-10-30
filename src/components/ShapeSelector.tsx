@@ -8,7 +8,8 @@ interface ShapeSelectorProps {
 }
 
 export const ShapeSelector: React.FC<ShapeSelectorProps> = ({ currentShape, onSelectShape }) => {
-  const shapes: SquishyShape[] = ['bun', 'cheese', 'cat', 'toast', 'peach', 'avocado', 'tomato'];
+  // Cà chua và Bánh bao được đưa lên đầu tiên
+  const shapes: SquishyShape[] = ['tomato', 'bun', 'cheese', 'cat', 'toast', 'peach', 'avocado'];
 
   return (
     <nav

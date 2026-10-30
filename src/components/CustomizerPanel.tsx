@@ -9,6 +9,7 @@ import {
   Expand,
   RotateCw,
   Clock,
+  Wind,
   Layers,
   Cloud,
   Feather,
@@ -25,7 +26,8 @@ import type {
   SquishyMaterialType,
   FaceExpression,
   RecoverySpeed,
-  BackgroundConfig
+  BackgroundConfig,
+  ASMRSoundProfile
 } from '../types';
 import { SHAPE_METADATA } from '../three/squishyModels';
 
@@ -84,6 +86,11 @@ export const CustomizerPanel: React.FC<CustomizerPanelProps> = ({
     { id: 'slow', label: 'Chậm Foam', time: '~2.5s' },
     { id: 'medium', label: 'Vừa Phải', time: '~1.5s' },
     { id: 'fast', label: 'Nảy Nhanh', time: '~0.8s' },
+  ];
+
+  const soundProfiles: { id: ASMRSoundProfile; label: string; desc: string; icon: string }[] = [
+    { id: 'slow_rise_whisper', label: 'Thở Hút Khí (Slow-Rise Whisper)', desc: 'Tiếng thở hút khí êm dịu (shhhhh...)', icon: '💨' },
+    { id: 'crunchy', label: 'Giòn Rụm Lách Tách (Crunchy ASMR)', desc: 'Tiếng giòn rụm lách tách như video', icon: '🫧' },
   ];
 
   const bgColors = [
@@ -275,7 +282,38 @@ export const CustomizerPanel: React.FC<CustomizerPanelProps> = ({
           </div>
         </div>
 
-        {/* 5. RECOVERY SPEED (SLOW-RISE) */}
+        {/* 5. ASMR SOUND STYLE */}
+        <div>
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-stone-700 mb-1.5">
+            <Wind className="w-3.5 h-3.5 text-stone-600" />
+            <span>Âm thanh ASMR:</span>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            {soundProfiles.map((sp) => {
+              const active = (config.soundProfile || 'slow_rise_whisper') === sp.id;
+              return (
+                <button
+                  key={sp.id}
+                  onClick={() => onChangeConfig({ soundProfile: sp.id })}
+                  className={`flex items-center justify-between py-1.5 px-2.5 rounded-xl text-xs transition-all duration-150 active:scale-95 text-left ${
+                    active
+                      ? 'bg-stone-900 text-stone-50 font-semibold shadow-sm'
+                      : 'bg-white/70 hover:bg-white text-stone-700 border border-stone-200/60'
+                  }`}
+                  title={sp.desc}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm">{sp.icon}</span>
+                    <span className="text-[11px]">{sp.label}</span>
+                  </div>
+                  {active && <span className="text-[9px] text-amber-300 font-mono">Đang chọn</span>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 6. RECOVERY SPEED (SLOW-RISE) */}
         <div>
           <div className="flex items-center gap-1.5 text-xs font-semibold text-stone-700 mb-1.5">
             <Clock className="w-3.5 h-3.5 text-stone-600" />
