@@ -3,7 +3,6 @@ import type { SquishyMaterialType, InteractionMode } from '../types';
 class ASMRSoundEngine {
   private ctx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
-  private distortionNode: WaveShaperNode | null = null;
   private isMuted: boolean = false;
   private volume: number = 0.85;
   private foamNoiseBuffer: AudioBuffer | null = null;
@@ -16,7 +15,9 @@ class ASMRSoundEngine {
   private init() {
     if (this.ctx) return;
     try {
-      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const AudioContextClass =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       this.ctx = new AudioContextClass();
 
       // Master output gain
@@ -24,51 +25,48 @@ class ASMRSoundEngine {
       this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : this.volume, this.ctx.currentTime);
       this.masterGain.connect(this.ctx.destination);
 
-      // Soft rubbery saturation shaper (tanh curve) to give elastic warmth without digital clipping
-      this.distortionNode = this.ctx.createWaveShaper();
-      this.distortionNode.curve = this.createSoftRubberCurve(24) as any;
-      this.distortionNode.oversample = '2x';
-      this.distortionNode.connect(this.masterGain);
-
-      // Generate a rich 3-second multi-textured foam air noise buffer
+      // Generate a high-definition 4-second multi-grain acoustic foam noise buffer
       const sampleRate = this.ctx.sampleRate;
-      const bufferSize = sampleRate * 3;
-      this.foamNoiseBuffer = this.ctx.createBuffer(1, bufferSize, sampleRate);
-      const data = this.foamNoiseBuffer.getChannelData(0);
+      const bufferSize = sampleRate * 4;
+      this.foamNoiseBuffer = this.ctx.createBuffer(2, bufferSize, sampleRate);
+      const left = this.foamNoiseBuffer.getChannelData(0);
+      const right = this.foamNoiseBuffer.getChannelData(1);
 
-      // Pink & Brown noise mix with micro-texture grains (mimics air escaping porous polyurethane cells)
-      let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+      // Pink & Brown noise with microscopic acoustic pores (micro-crackle of polyurethane air cells)
+      let b0L = 0, b1L = 0, b2L = 0, b3L = 0, b4L = 0, b5L = 0;
+      let b0R = 0, b1R = 0, b2R = 0, b3R = 0, b4R = 0, b5R = 0;
+
       for (let i = 0; i < bufferSize; i++) {
-        const white = Math.random() * 2 - 1;
-        b0 = 0.99886 * b0 + white * 0.0555179;
-        b1 = 0.99332 * b1 + white * 0.0750759;
-        b2 = 0.96900 * b2 + white * 0.1538520;
-        b3 = 0.86650 * b3 + white * 0.3104856;
-        b4 = 0.55000 * b4 + white * 0.5329522;
-        b5 = -0.7616 * b5 - white * 0.0168980;
-        const pink = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
-        b6 = white * 0.115926;
+        const whiteL = Math.random() * 2 - 1;
+        const whiteR = Math.random() * 2 - 1;
 
-        // Subtle micro-grain modulation for foam porous crunch
-        const grain = (Math.random() > 0.94 ? (Math.random() - 0.5) * 0.12 : 0);
-        data[i] = pink + grain;
+        b0L = 0.99886 * b0L + whiteL * 0.0555179;
+        b1L = 0.99332 * b1L + whiteL * 0.0750759;
+        b2L = 0.96900 * b2L + whiteL * 0.1538520;
+        b3L = 0.86650 * b3L + whiteL * 0.3104856;
+        b4L = 0.55000 * b4L + whiteL * 0.5329522;
+        b5L = -0.7616 * b5L - whiteL * 0.0168980;
+
+        b0R = 0.99886 * b0R + whiteR * 0.0555179;
+        b1R = 0.99332 * b1R + whiteR * 0.0750759;
+        b2R = 0.96900 * b2R + whiteR * 0.1538520;
+        b3R = 0.86650 * b3R + whiteR * 0.3104856;
+        b4R = 0.55000 * b4R + whiteR * 0.5329522;
+        b5R = -0.7616 * b5R - whiteR * 0.0168980;
+
+        const pinkL = (b0L + b1L + b2L + b3L + b4L + b5L + whiteL * 0.5362) * 0.12;
+        const pinkR = (b0R + b1R + b2R + b3R + b4R + b5R + whiteR * 0.5362) * 0.12;
+
+        // ASMR micro-pore pops: gentle crunch when memory foam cells squeeze
+        const grainL = Math.random() > 0.92 ? (Math.random() - 0.5) * 0.16 : 0;
+        const grainR = Math.random() > 0.92 ? (Math.random() - 0.5) * 0.16 : 0;
+
+        left[i] = pinkL + grainL;
+        right[i] = pinkR + grainR;
       }
     } catch (e) {
-      console.warn('Web Audio API not supported or blocked:', e);
+      console.warn('Web Audio API error:', e);
     }
-  }
-
-  // Soft saturation curve for realistic rubber & silicone tactile response
-  private createSoftRubberCurve(amount: number = 20): Float32Array {
-    const k = amount;
-    const n = 44100;
-    const curve = new Float32Array(n);
-    const deg = Math.PI / 180;
-    for (let i = 0; i < n; ++i) {
-      const x = (i * 2) / n - 1;
-      curve[i] = ((3 + k) * x * 20 * deg) / (Math.PI + k * Math.abs(x));
-    }
-    return curve;
   }
 
   public resume() {
@@ -81,110 +79,121 @@ class ASMRSoundEngine {
   public setMuted(muted: boolean) {
     this.isMuted = muted;
     if (this.masterGain && this.ctx) {
-      this.masterGain.gain.setTargetAtTime(muted ? 0 : this.volume, this.ctx.currentTime, 0.04);
+      this.masterGain.gain.setTargetAtTime(muted ? 0 : this.volume, this.ctx.currentTime, 0.03);
     }
   }
 
   public setVolume(vol: number) {
     this.volume = Math.max(0, Math.min(1, vol));
     if (this.masterGain && this.ctx && !this.isMuted) {
-      this.masterGain.gain.setTargetAtTime(this.volume, this.ctx.currentTime, 0.04);
+      this.masterGain.gain.setTargetAtTime(this.volume, this.ctx.currentTime, 0.03);
     }
   }
 
+  private createPanner(pan: number = 0): StereoPannerNode | GainNode {
+    if (!this.ctx) return {} as any;
+    if (this.ctx.createStereoPanner) {
+      const panner = this.ctx.createStereoPanner();
+      panner.pan.value = Math.max(-1, Math.min(1, pan));
+      panner.connect(this.masterGain!);
+      return panner;
+    }
+    const gain = this.ctx.createGain();
+    gain.connect(this.masterGain!);
+    return gain;
+  }
+
   /**
-   * ÂM THANH BÓP SQUISHY CHÂN THẬT & ĐÀN HỒI (Elastic Squelch & Air Compression)
+   * ÂM THANH BÓP SQUISHY CHÂN THẬT (ASMR Binaural Sponge Crunch & Pneumatic Squelch)
+   * Lấy cảm hứng từ các video ASMR squishy: tiếng xốp nén êm tai, bọt khí xì ra dịu dàng.
    */
   public playSquish(
     intensity: number = 0.6,
     mode: InteractionMode = 'squish',
-    materialType: SquishyMaterialType = 'matte'
+    materialType: SquishyMaterialType = 'matte',
+    panX: number = 0
   ) {
     this.resume();
-    if (!this.ctx || !this.masterGain || !this.distortionNode || this.isMuted) return;
+    if (!this.ctx || !this.masterGain || this.isMuted) return;
 
     const now = this.ctx.currentTime;
-    if (now - this.lastSquishTime < 0.045) return;
+    if (now - this.lastSquishTime < 0.04) return;
     this.lastSquishTime = now;
 
-    const clampedIntensity = Math.max(0.2, Math.min(1.0, intensity));
+    const clampedIntensity = Math.max(0.15, Math.min(1.0, intensity));
+    const panner = this.createPanner(panX);
 
-    // 1. TACTILE SURFACE TACK (Tiếng tiếp xúc dính êm nhẹ khi ngón tay ấn vào mút xốp)
-    const tackOsc = this.ctx.createOscillator();
-    const tackGain = this.ctx.createGain();
-    tackOsc.type = 'triangle';
-    tackOsc.frequency.setValueAtTime(650 + Math.random() * 80, now);
-    tackOsc.frequency.exponentialRampToValueAtTime(140, now + 0.035);
+    // 1. WARM SUB-BASS TACTILE THUD (Âm trầm êm ái khi lòng bàn tay ép vào khối xốp đặc)
+    const subOsc = this.ctx.createOscillator();
+    const subGain = this.ctx.createGain();
+    subOsc.type = 'sine';
+    const subStartFreq = materialType === 'glossy' ? 120 : (mode === 'poke' ? 100 : 75);
+    subOsc.frequency.setValueAtTime(subStartFreq, now);
+    subOsc.frequency.exponentialRampToValueAtTime(38, now + 0.08);
 
-    tackGain.gain.setValueAtTime(0.001, now);
-    tackGain.gain.linearRampToValueAtTime(0.18 * clampedIntensity, now + 0.006);
-    tackGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
+    subGain.gain.setValueAtTime(0.001, now);
+    subGain.gain.linearRampToValueAtTime(0.35 * clampedIntensity, now + 0.012);
+    subGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
 
-    tackOsc.connect(tackGain);
-    tackGain.connect(this.masterGain);
-    tackOsc.start(now);
-    tackOsc.stop(now + 0.045);
+    subOsc.connect(subGain);
+    subGain.connect(panner);
+    subOsc.start(now);
+    subOsc.stop(now + 0.14);
 
-    // 2. ELASTIC BODY TONE (Âm sắc nảy đàn hồi - Pitch swoop with elastic rebound inflection)
-    // Đặc trưng của đồ đàn hồi: cao độ hạ sâu rồi nảy nhẹ lại trước khi tắt!
+    // 2. ELASTIC SQUELCH / CRUNCH (Âm sắc nảy đàn hồi và tiếng xốp mút nhớ)
     const bodyOsc = this.ctx.createOscillator();
     const bodyGain = this.ctx.createGain();
 
-    // Glossy jelly has higher bounce pitch, matte foam has warmer deeper thrum
     const isJelly = materialType === 'glossy';
-    const isVelvet = materialType === 'velvet';
-
     bodyOsc.type = isJelly ? 'sine' : 'triangle';
 
-    const basePitch = mode === 'poke' ? 360 : (isJelly ? 320 : 220);
-    const startPitch = basePitch + clampedIntensity * 180 + (Math.random() * 30 - 15);
-    const dropPitch = mode === 'poke' ? 130 : (isJelly ? 140 : 85);
-    const bouncePitch = dropPitch + (isJelly ? 35 : 18); // Elastic rebound inflection!
+    const basePitch = mode === 'poke' ? 280 : (isJelly ? 240 : 160);
+    const startPitch = basePitch + clampedIntensity * 120 + (Math.random() * 20 - 10);
+    const dropPitch = mode === 'poke' ? 110 : (isJelly ? 120 : 65);
 
     bodyOsc.frequency.setValueAtTime(startPitch, now);
-    bodyOsc.frequency.exponentialRampToValueAtTime(dropPitch, now + 0.07);
-    bodyOsc.frequency.linearRampToValueAtTime(bouncePitch, now + 0.12);
-    bodyOsc.frequency.exponentialRampToValueAtTime(dropPitch * 0.9, now + 0.22);
+    bodyOsc.frequency.exponentialRampToValueAtTime(dropPitch, now + 0.09);
 
     bodyGain.gain.setValueAtTime(0.001, now);
-    bodyGain.gain.linearRampToValueAtTime((isJelly ? 0.38 : 0.28) * clampedIntensity, now + 0.015);
-    bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + (isJelly ? 0.26 : 0.2));
+    bodyGain.gain.linearRampToValueAtTime((isJelly ? 0.28 : 0.22) * clampedIntensity, now + 0.015);
+    bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
 
     bodyOsc.connect(bodyGain);
-    bodyGain.connect(this.distortionNode);
+    bodyGain.connect(panner);
     bodyOsc.start(now);
-    bodyOsc.stop(now + 0.28);
+    bodyOsc.stop(now + 0.2);
 
-    // 3. POROUS FOAM AIR EXHAUST (Tiếng khí nén xì qua lỗ xốp mút nhớ khi bị bẹp)
+    // 3. AIR EXHAUST & POROUS FOAM HISSER (Tiếng khí nén xì êm qua các mao mạch bọt xốp)
     if (this.foamNoiseBuffer) {
       const noiseSource = this.ctx.createBufferSource();
       noiseSource.buffer = this.foamNoiseBuffer;
-      noiseSource.playbackRate.value = 0.9 + Math.random() * 0.3;
+      noiseSource.playbackRate.value = 0.95 + Math.random() * 0.2;
 
-      // Resonant bandpass sweep: mimicks air whoosh through squishy pores
+      // Filter: warm bandpass sweep
       const noiseFilter = this.ctx.createBiquadFilter();
-      noiseFilter.type = isJelly ? 'lowpass' : 'bandpass';
-      const filterStart = mode === 'poke' ? 1400 : (isVelvet ? 850 : 1100);
-      noiseFilter.frequency.setValueAtTime(filterStart + clampedIntensity * 500, now);
-      noiseFilter.frequency.exponentialRampToValueAtTime(320, now + 0.18);
-      noiseFilter.Q.value = isJelly ? 3.8 : 2.4; // High resonance for squelchy jelly sound
+      noiseFilter.type = 'bandpass';
+      const filterFreq = mode === 'poke' ? 1200 : (isJelly ? 700 : 950);
+      noiseFilter.frequency.setValueAtTime(filterFreq + clampedIntensity * 400, now);
+      noiseFilter.frequency.exponentialRampToValueAtTime(260, now + 0.18);
+      noiseFilter.Q.value = isJelly ? 2.5 : 1.6;
 
       const noiseGain = this.ctx.createGain();
       noiseGain.gain.setValueAtTime(0.001, now);
-      noiseGain.gain.linearRampToValueAtTime(0.42 * clampedIntensity, now + 0.02);
-      noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.24);
+      noiseGain.gain.linearRampToValueAtTime(0.38 * clampedIntensity, now + 0.02);
+      noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
 
       noiseSource.connect(noiseFilter);
       noiseFilter.connect(noiseGain);
-      noiseGain.connect(this.masterGain);
+      noiseGain.connect(panner);
 
       noiseSource.start(now);
-      noiseSource.stop(now + 0.26);
+      noiseSource.stop(now + 0.24);
     }
   }
 
   /**
    * ÂM THANH NỞ PHỒNG TỪ TỪ (Slow-Rise Breath & Elastic Relaxation)
+   * Âm thanh êm ru đặc trưng khi squishy từ từ hút không khí trở lại và trở về hình dạng cũ.
    */
   public playRelease(
     durationSec: number = 2.5,
@@ -194,22 +203,22 @@ class ASMRSoundEngine {
     if (!this.ctx || !this.masterGain || this.isMuted || !this.foamNoiseBuffer) return;
 
     const now = this.ctx.currentTime;
-    const soundDuration = Math.min(2.4, Math.max(0.8, durationSec * 0.65));
+    const soundDuration = Math.min(2.2, Math.max(0.7, durationSec * 0.6));
 
-    // 1. Breathy Inhale (Bọt xốp mút nhớ hút khí trở lại khi phồng to)
+    // Tiếng bọt xốp hít khí êm ái
     const noiseSource = this.ctx.createBufferSource();
     noiseSource.buffer = this.foamNoiseBuffer;
-    noiseSource.playbackRate.value = 0.85 + Math.random() * 0.15;
+    noiseSource.playbackRate.value = 0.9 + Math.random() * 0.15;
 
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(240, now);
-    filter.frequency.exponentialRampToValueAtTime(materialType === 'glossy' ? 950 : 780, now + soundDuration);
-    filter.Q.value = 1.4;
+    filter.frequency.setValueAtTime(220, now);
+    filter.frequency.exponentialRampToValueAtTime(materialType === 'glossy' ? 820 : 640, now + soundDuration);
+    filter.Q.value = 1.2;
 
     const noiseGain = this.ctx.createGain();
     noiseGain.gain.setValueAtTime(0.0001, now);
-    noiseGain.gain.linearRampToValueAtTime(0.16, now + soundDuration * 0.35);
+    noiseGain.gain.linearRampToValueAtTime(0.14, now + soundDuration * 0.35);
     noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + soundDuration);
 
     noiseSource.connect(filter);
@@ -218,54 +227,38 @@ class ASMRSoundEngine {
 
     noiseSource.start(now);
     noiseSource.stop(now + soundDuration + 0.05);
-
-    // 2. Soft Elastic Recovery Tone (Âm thanh giải phóng sức căng cao su êm ái)
-    const relaxOsc = this.ctx.createOscillator();
-    const relaxGain = this.ctx.createGain();
-    relaxOsc.type = 'sine';
-    relaxOsc.frequency.setValueAtTime(75, now);
-    relaxOsc.frequency.linearRampToValueAtTime(125, now + soundDuration * 0.4);
-
-    relaxGain.gain.setValueAtTime(0.0001, now);
-    relaxGain.gain.linearRampToValueAtTime(0.12, now + 0.06);
-    relaxGain.gain.exponentialRampToValueAtTime(0.0001, now + soundDuration * 0.5);
-
-    relaxOsc.connect(relaxGain);
-    relaxGain.connect(this.masterGain);
-    relaxOsc.start(now);
-    relaxOsc.stop(now + soundDuration * 0.55);
   }
 
   /**
    * ÂM THANH KÉO DÃN (Elastic Rubber Tension & Mochi Stretch)
    */
-  public playStretch(tension: number = 0.5) {
+  public playStretch(tension: number = 0.5, panX: number = 0) {
     this.resume();
     if (!this.ctx || !this.masterGain || this.isMuted) return;
 
     const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
+    const panner = this.createPanner(panX);
 
-    osc.type = 'triangle';
-    // Rubber tension: rising pitch with subtle micro-vibrato
-    const base = 260 + tension * 220 + (Math.random() * 20 - 10);
+    osc.type = 'sine';
+    const base = 180 + tension * 160 + (Math.random() * 20 - 10);
     osc.frequency.setValueAtTime(base, now);
-    osc.frequency.exponentialRampToValueAtTime(base + 80, now + 0.14);
+    osc.frequency.exponentialRampToValueAtTime(base + 60, now + 0.12);
 
     gain.gain.setValueAtTime(0.001, now);
-    gain.gain.linearRampToValueAtTime(0.2 * tension, now + 0.025);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+    gain.gain.linearRampToValueAtTime(0.18 * tension, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
 
     osc.connect(gain);
-    gain.connect(this.masterGain);
+    gain.connect(panner);
 
     osc.start(now);
-    osc.stop(now + 0.19);
+    osc.stop(now + 0.17);
   }
 
   /**
-   * ÂM THANH BONG BÓNG POP (Vui nhộn khi click nút hoặc nảy tưng)
+   * ÂM THANH POP NHẸ / CHẠM GẦN
    */
   public playPop() {
     this.resume();
@@ -276,28 +269,57 @@ class ASMRSoundEngine {
     const gain = this.ctx.createGain();
 
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(440 + Math.random() * 60, now);
-    osc.frequency.exponentialRampToValueAtTime(960 + Math.random() * 80, now + 0.065);
+    osc.frequency.setValueAtTime(380 + Math.random() * 40, now);
+    osc.frequency.exponentialRampToValueAtTime(740 + Math.random() * 60, now + 0.05);
 
-    gain.gain.setValueAtTime(0.22, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.075);
+    gain.gain.setValueAtTime(0.16, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
 
     osc.connect(gain);
     gain.connect(this.masterGain);
 
     osc.start(now);
-    osc.stop(now + 0.08);
+    osc.stop(now + 0.07);
   }
 
   /**
-   * Âm thanh chuông Zen ngân vang khi xả 100% stress
+   * ÂM THANH RÊ CHUỘT / NUDGE XÚC GIÁC (Rất nhẹ khi lướt gần squishy)
    */
+  public playHoverNudge(panX: number = 0) {
+    this.resume();
+    if (!this.ctx || !this.masterGain || this.isMuted || !this.foamNoiseBuffer) return;
+
+    const now = this.ctx.currentTime;
+    if (now - this.lastSquishTime < 0.12) return;
+    this.lastSquishTime = now;
+
+    const panner = this.createPanner(panX);
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = this.foamNoiseBuffer;
+    noise.playbackRate.value = 1.2;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(450, now);
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.045, now + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(panner);
+
+    noise.start(now);
+    noise.stop(now + 0.1);
+  }
+
   public playZenSound() {
     this.resume();
     if (!this.ctx || !this.masterGain || this.isMuted) return;
 
     const now = this.ctx.currentTime;
-    // Chuỗi nốt êm dịu ngũ cung: F4, A4, C5, E5, G5
     const notes = [349.23, 440.0, 523.25, 659.25, 783.99];
 
     notes.forEach((freq, idx) => {
@@ -310,14 +332,14 @@ class ASMRSoundEngine {
 
       const noteStart = now + idx * 0.12;
       gain.gain.setValueAtTime(0.0001, noteStart);
-      gain.gain.linearRampToValueAtTime(0.18, noteStart + 0.04);
-      gain.gain.exponentialRampToValueAtTime(0.0001, noteStart + 2.6);
+      gain.gain.linearRampToValueAtTime(0.16, noteStart + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.0001, noteStart + 2.4);
 
       osc.connect(gain);
       gain.connect(this.masterGain);
 
       osc.start(noteStart);
-      osc.stop(noteStart + 2.7);
+      osc.stop(noteStart + 2.5);
     });
   }
 }

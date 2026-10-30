@@ -1,5 +1,5 @@
 import React from 'react';
-import { Volume2, VolumeX, RotateCcw, Sparkles, Smile, Flame } from 'lucide-react';
+import { Volume2, VolumeX, RotateCcw, Sparkles, Flame, Shrink } from 'lucide-react';
 import type { StressStats } from '../types';
 
 interface StressBarProps {
@@ -8,7 +8,6 @@ interface StressBarProps {
   onToggleSound: () => void;
   onReset: () => void;
   onSqueezeAll: () => void;
-  moodMessage: string;
 }
 
 export const StressBar: React.FC<StressBarProps> = ({
@@ -16,109 +15,110 @@ export const StressBar: React.FC<StressBarProps> = ({
   soundEnabled,
   onToggleSound,
   onReset,
-  onSqueezeAll,
-  moodMessage
+  onSqueezeAll
 }) => {
-  // Determine color and status according to stress level
   const stress = stats.stressLevel;
+
   let statusBadge = 'Căng Thẳng';
-  let barGradient = 'from-rose-500 to-amber-500';
-  let badgeBg = 'bg-rose-100 text-rose-700 border-rose-200';
+  let barColor = 'bg-stone-700';
+  let badgeStyle = 'bg-stone-100 text-stone-700 border-stone-200';
 
   if (stress <= 10) {
-    statusBadge = 'Zen Tuyệt Đối 🧘';
-    barGradient = 'from-emerald-400 to-teal-500';
-    badgeBg = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+    statusBadge = 'Zen 🌿';
+    barColor = 'bg-emerald-600';
+    badgeStyle = 'bg-emerald-50 text-emerald-800 border-emerald-200';
   } else if (stress <= 40) {
-    statusBadge = 'Thư Giãn Sâu 🌿';
-    barGradient = 'from-teal-400 to-cyan-500';
-    badgeBg = 'bg-teal-100 text-teal-800 border-teal-200';
+    statusBadge = 'Thư Giãn 🍃';
+    barColor = 'bg-teal-600';
+    badgeStyle = 'bg-teal-50 text-teal-800 border-teal-200';
   } else if (stress <= 75) {
-    statusBadge = 'Dễ Chịu Dần 🌸';
-    barGradient = 'from-amber-400 to-pink-500';
-    badgeBg = 'bg-amber-100 text-amber-800 border-amber-200';
+    statusBadge = 'Dịu Lại 🌸';
+    barColor = 'bg-amber-600';
+    badgeStyle = 'bg-amber-50 text-amber-800 border-amber-200';
+  } else {
+    barColor = 'bg-rose-600';
+    badgeStyle = 'bg-rose-50 text-rose-800 border-rose-200';
   }
 
   return (
-    <header className="absolute top-4 left-4 right-4 z-20 flex flex-col md:flex-row items-center justify-between gap-3 pointer-events-none">
-      {/* Brand & Stats Card */}
-      <div className="soft-glass rounded-2xl px-5 py-3 pointer-events-auto flex items-center gap-4 w-full md:w-auto justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-pink-400 to-purple-400 flex items-center justify-center text-white shadow-md shadow-pink-200">
-            <Sparkles className="w-5 h-5 animate-pulse" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-base font-bold text-gray-800 tracking-tight">ASMR Squishy 3D</h1>
-              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${badgeBg}`}>
-                {statusBadge}
-              </span>
-            </div>
-            <p className="text-xs text-purple-600 font-medium italic mt-0.5 animate-fade-in">
-              "{moodMessage}"
-            </p>
-          </div>
+    <header className="absolute top-2.5 left-2.5 right-2.5 sm:top-4 sm:left-4 sm:right-4 z-20 flex items-center justify-between gap-2 pointer-events-none">
+      {/* Brand & Ambient Status Island */}
+      <div className="tactile-glass rounded-2xl px-3 py-2 sm:px-4 sm:py-2.5 pointer-events-auto flex items-center gap-2.5 sm:gap-3 transition-all duration-300 shadow-sm">
+        <div className="w-8 h-8 rounded-xl bg-stone-900 text-amber-100 flex items-center justify-center shrink-0">
+          <Sparkles className="w-4 h-4 text-amber-300" />
+        </div>
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <h1 className="text-xs sm:text-sm font-bold text-stone-900 tracking-tight hidden xs:inline">
+            Squishy 3D
+          </h1>
+          <span className={`text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-full border ${badgeStyle}`}>
+            {statusBadge}
+          </span>
         </div>
 
-        {/* Combo Badge */}
+        {/* Combo Counter Badge */}
         {stats.comboCount > 1 && (
-          <div className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-amber-400 to-orange-400 text-white font-extrabold text-xs rounded-full shadow-sm animate-bounce">
-            <Flame className="w-3.5 h-3.5 fill-current" />
-            <span>{stats.comboCount}x COMBO!</span>
+          <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-500 text-stone-950 font-bold text-[10px] sm:text-xs rounded-full shadow-sm animate-pulse">
+            <Flame className="w-3 h-3 fill-current" />
+            <span>{stats.comboCount}x</span>
           </div>
         )}
       </div>
 
-      {/* Stress Meter & Action Buttons */}
-      <div className="soft-glass rounded-2xl px-5 py-3 pointer-events-auto flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
-        {/* Stress Bar */}
-        <div className="flex flex-col gap-1 w-44 md:w-56">
-          <div className="flex justify-between items-center text-xs font-semibold text-gray-600">
-            <span className="flex items-center gap-1">
-              <Smile className="w-3.5 h-3.5 text-purple-500" />
-              Mức Stress:
-            </span>
-            <span className="font-mono text-gray-800">{Math.round(stress)}%</span>
+      {/* Stress Meter & Controls */}
+      <div className="tactile-glass rounded-2xl px-3 py-1.5 sm:px-4 sm:py-2 pointer-events-auto flex items-center gap-2 sm:gap-3.5 transition-all duration-300 shadow-sm">
+        {/* Compact Stress Bar */}
+        <div className="flex flex-col gap-0.5 w-20 sm:w-36 md:w-44">
+          <div className="flex justify-between items-center text-[10px] sm:text-xs font-medium text-stone-600">
+            <span className="hidden sm:inline text-stone-700">Stress:</span>
+            <span className="font-mono font-semibold text-stone-800">{Math.round(stress)}%</span>
           </div>
-          <div className="w-full h-3 bg-gray-200/80 rounded-full overflow-hidden p-0.5 shadow-inner">
+          <div className="w-full h-2 sm:h-2.5 bg-stone-200/80 rounded-full overflow-hidden p-0.5 shadow-inner">
             <div
-              className={`h-full rounded-full bg-gradient-to-r ${barGradient} transition-all duration-300 ease-out shadow-sm`}
+              className={`h-full rounded-full ${barColor} transition-all duration-300 ease-out`}
               style={{ width: `${stress}%` }}
             />
           </div>
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-1.5 border-l border-gray-200/80 pl-3">
+        <div className="flex items-center gap-1 sm:gap-1.5 border-l border-stone-200 pl-2 sm:pl-3">
           {/* Squeeze All button */}
           <button
             onClick={onSqueezeAll}
-            title="Bóp dẹp toàn diện"
-            className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-purple-100 hover:bg-purple-200 text-purple-700 transition active:scale-95 shadow-xs"
+            title="Bóp bẹp toàn diện (Phím tắt: Space)"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-stone-900 hover:bg-stone-800 text-stone-100 transition-all duration-150 active:scale-95 shadow-sm"
           >
-            Bóp Bẹp 💥
+            <Shrink className="w-3.5 h-3.5 text-amber-300" />
+            <span className="hidden md:inline">Bóp Bẹp</span>
           </button>
 
           {/* Reset button */}
           <button
             onClick={onReset}
-            title="Làm mới squishy"
-            className="p-2 rounded-xl text-gray-600 hover:text-purple-600 hover:bg-white/80 transition active:scale-95"
+            title="Làm mới squishy (Phím tắt: R)"
+            className="p-1.5 sm:p-2 rounded-xl text-stone-600 hover:text-stone-900 hover:bg-stone-100/80 transition-all duration-150 active:scale-95"
+            aria-label="Làm mới squishy"
           >
-            <RotateCcw className="w-4 h-4" />
+            <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
 
           {/* Sound toggle */}
           <button
             onClick={onToggleSound}
-            title={soundEnabled ? 'Tắt âm thanh ASMR' : 'Bật âm thanh ASMR'}
-            className={`p-2 rounded-xl transition active:scale-95 ${
+            title={soundEnabled ? 'Tắt âm thanh ASMR (Phím tắt: M)' : 'Bật âm thanh ASMR (Phím tắt: M)'}
+            aria-label={soundEnabled ? 'Tắt âm thanh ASMR' : 'Bật âm thanh ASMR'}
+            className={`p-1.5 sm:p-2 rounded-xl transition-all duration-150 active:scale-95 ${
               soundEnabled
-                ? 'text-purple-600 bg-purple-50 hover:bg-purple-100'
-                : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                ? 'text-stone-900 bg-amber-100/70 hover:bg-amber-200/70'
+                : 'text-stone-400 hover:text-stone-700 hover:bg-stone-100'
             }`}
           >
-            {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            {soundEnabled ? (
+              <Volume2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-stone-900" />
+            ) : (
+              <VolumeX className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            )}
           </button>
         </div>
       </div>

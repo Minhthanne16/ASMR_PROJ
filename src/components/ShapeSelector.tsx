@@ -11,8 +11,11 @@ export const ShapeSelector: React.FC<ShapeSelectorProps> = ({ currentShape, onSe
   const shapes: SquishyShape[] = ['bun', 'cheese', 'cat', 'toast', 'peach', 'avocado', 'tomato'];
 
   return (
-    <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 w-auto max-w-[92vw]">
-      <div className="soft-glass rounded-2xl p-2 px-3 flex items-center gap-2 overflow-x-auto custom-scrollbar shadow-lg">
+    <nav
+      aria-label="Chọn mẫu squishy"
+      className="absolute bottom-2.5 sm:bottom-6 left-1/2 -translate-x-1/2 z-20 w-auto max-w-[96vw] sm:max-w-[92vw]"
+    >
+      <div className="tactile-glass rounded-xl sm:rounded-2xl p-1 sm:p-2 flex items-center gap-1 sm:gap-1.5 overflow-x-auto sensory-scrollbar transition-all duration-300 shadow-lg">
         {shapes.map((id) => {
           const meta = SHAPE_METADATA[id];
           const isSelected = currentShape === id;
@@ -21,18 +24,18 @@ export const ShapeSelector: React.FC<ShapeSelectorProps> = ({ currentShape, onSe
             <button
               key={id}
               onClick={() => onSelectShape(id)}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-200 whitespace-nowrap text-xs font-semibold select-none active:scale-95 ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg sm:rounded-xl transition-all duration-150 whitespace-nowrap text-xs font-semibold select-none active:scale-95 ${
                 isSelected
-                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md shadow-purple-200 scale-105'
-                  : 'text-gray-700 hover:bg-white/90 hover:text-purple-600 bg-white/40'
+                  ? 'bg-stone-900 text-amber-100 shadow-md ring-1 ring-stone-950/20'
+                  : 'text-stone-700 hover:text-stone-950 hover:bg-stone-100/70 bg-transparent'
               }`}
             >
-              <span className="text-base">{meta.emoji}</span>
-              <span>{meta.vietnameseName}</span>
+              <span className="text-sm sm:text-base leading-none">{meta.emoji}</span>
+              <span className="tracking-tight text-[11px] sm:text-xs">{meta.vietnameseName}</span>
             </button>
           );
         })}
       </div>
-    </div>
+    </nav>
   );
 };

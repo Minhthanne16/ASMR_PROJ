@@ -43,21 +43,21 @@ export class DeformationEngine {
     switch (speed) {
       case 'super_slow':
         // Overdamped viscoelastic: slow, smooth, luxurious memory foam expansion
-        this.stiffness = 3.5;
-        this.damping = 4.4;
+        this.stiffness = 3.2;
+        this.damping = 4.8;
         break;
       case 'slow':
-        this.stiffness = 7.5;
-        this.damping = 6.0;
+        this.stiffness = 7.0;
+        this.damping = 5.8;
         break;
       case 'medium':
-        this.stiffness = 15.0;
-        this.damping = 7.5;
+        this.stiffness = 16.0;
+        this.damping = 6.8;
         break;
       case 'fast':
         // Underdamped jelly: juicy elastic wobble!
-        this.stiffness = 38.0;
-        this.damping = 4.8;
+        this.stiffness = 36.0;
+        this.damping = 4.2;
         break;
     }
   }
@@ -71,7 +71,7 @@ export class DeformationEngine {
     mode: InteractionMode,
     initialDepth: number = 0.55
   ) {
-    const radius = mode === 'squish' ? 1.6 : (mode === 'poke' ? 0.95 : 1.3);
+    const radius = mode === 'squish' ? 1.7 : (mode === 'poke' ? 1.05 : 1.4);
 
     this.activeContact = {
       point: localPoint.clone(),
@@ -97,8 +97,41 @@ export class DeformationEngine {
     if (!this.activeContact) return;
 
     this.activeContact.point.copy(localPoint);
-    this.activeContact.depth = Math.min(1.1, Math.max(0.35, 0.55 * depthMultiplier));
+    this.activeContact.depth = Math.min(1.2, Math.max(0.3, 0.55 * depthMultiplier));
     this.activeContact.pullVector.copy(dragDelta);
+    this.isDeformed = true;
+  }
+
+  /**
+   * Tương tác mềm khi rê chuột xung quanh (Hover / Proximity Wobble)
+   * Tạo độ nảy / gợn sóng xúc giác nhẹ nhàng khi con trỏ lướt gần bề mặt squishy
+   */
+  public nudgeProximity(localPoint: THREE.Vector3, intensity: number = 0.15) {
+    if (this.activeContact) return; // Đang giữ bóp thì không cần hover wobble
+
+    const orig = this.originalPositions;
+    const vel = this.velocities;
+    const R = 1.35;
+    const hitX = localPoint.x;
+    const hitY = localPoint.y;
+    const hitZ = localPoint.z;
+
+    for (let i = 0; i < this.vertexCount; i++) {
+      const idx = i * 3;
+      const dx = orig[idx] - hitX;
+      const dy = orig[idx + 1] - hitY;
+      const dz = orig[idx + 2] - hitZ;
+      const distSq = dx * dx + dy * dy + dz * dz;
+
+      if (distSq < R * R) {
+        const dist = Math.sqrt(distSq);
+        const falloff = Math.cos((dist / R) * Math.PI * 0.5) * intensity;
+        vel[idx] += (dx / (dist + 0.01)) * falloff * 0.8;
+        vel[idx + 1] += (dy / (dist + 0.01)) * falloff * 0.8;
+        vel[idx + 2] += (dz / (dist + 0.01)) * falloff * 0.8;
+      }
+    }
+
     this.isDeformed = true;
   }
 
@@ -107,13 +140,12 @@ export class DeformationEngine {
    */
   public endContact() {
     this.activeContact = null;
-    // Keep isDeformed = true so the recovery update loop restores it
   }
 
   /**
-   * Bóp dẹp toàn diện (Squeeze All button)
+   * Bóp dẹp toàn diện (Squeeze All)
    */
-  public squeezeAll(compressionY: number = 0.45) {
+  public squeezeAll(compressionY: number = 0.42) {
     const orig = this.originalPositions;
     const curr = this.currentPositions;
     const vel = this.velocities;
@@ -123,7 +155,7 @@ export class DeformationEngine {
       // Nén mạnh trục Y
       curr[idx + 1] = orig[idx + 1] * compressionY;
       // Phồng to trục X và Z (Poisson volume preservation)
-      const bulge = 1 + (1 - compressionY) * 0.5;
+      const bulge = 1 + (1 - compressionY) * 0.52;
       curr[idx] = orig[idx] * bulge;
       curr[idx + 2] = orig[idx + 2] * bulge;
 
@@ -207,28 +239,29 @@ export class DeformationEngine {
               targetZ -= norm.z * depth * falloff;
 
               // Phồng hông vuông góc với hướng nén
-              const perpX = dx - (dx * norm.x + dy * norm.y + dz * norm.z) * norm.x;
-              const perpY = dy - (dx * norm.x + dy * norm.y + dz * norm.z) * norm.y;
-              const perpZ = dz - (dx * norm.x + dy * norm.y + dz * norm.z) * norm.z;
+              const dot = dx * norm.x + dy * norm.y + dz * norm.z;
+              const perpX = dx - dot * norm.x;
+              const perpY = dy - dot * norm.y;
+              const perpZ = dz - dot * norm.z;
               const perpLen = Math.sqrt(perpX * perpX + perpY * perpY + perpZ * perpZ) + 0.001;
 
-              const lateralBulge = depth * falloff * 0.42;
+              const lateralBulge = depth * falloff * 0.45;
               targetX += (perpX / perpLen) * lateralBulge;
               targetY += (perpY / perpLen) * lateralBulge;
               targetZ += (perpZ / perpLen) * lateralBulge;
             }
           } else if (mode === 'stretch') {
             // Kéo dãn theo vector chuột
-            if (u <= 1.2) {
-              const factor = Math.pow(1 - Math.min(1, u / 1.2), 1.4);
+            if (u <= 1.25) {
+              const factor = Math.pow(1 - Math.min(1, u / 1.25), 1.3);
               targetX += pull.x * factor * 1.5;
               targetY += pull.y * factor * 1.5;
               targetZ += pull.z * factor * 1.5;
             }
           }
 
-          // Làm mềm điểm lún: co giãn mượt mà về target
-          const complianceSpeed = 22.0 * dt;
+          // Compliance lerp
+          const complianceSpeed = 24.0 * dt;
           curr[idx] += (targetX - curr[idx]) * Math.min(0.85, complianceSpeed);
           curr[idx + 1] += (targetY - curr[idx + 1]) * Math.min(0.85, complianceSpeed);
           curr[idx + 2] += (targetZ - curr[idx + 2]) * Math.min(0.85, complianceSpeed);
@@ -240,7 +273,7 @@ export class DeformationEngine {
       }
     }
 
-    // 2. VISCOELASTIC SLOW-RISE RECOVERY CHO CÁC ĐIỂM KHÔNG BỊ GIỮ
+    // 2. VISCOELASTIC SLOW-RISE RECOVERY VỚI MÔ PHỎNG GIẢM CHẤN
     const k = this.stiffness;
     const d = this.damping;
 
@@ -253,11 +286,11 @@ export class DeformationEngine {
 
       const distSq = diffX * diffX + diffY * diffY + diffZ * diffZ;
 
-      if (distSq > 0.00002) {
+      if (distSq > 0.000015) {
         anyMoving = true;
         totalDisp += Math.sqrt(distSq);
 
-        // Lực phục hồi lò xo có giảm chấn F = k * delta - d * v
+        // Lực đàn hồi nhớ: F = k * delta - d * v
         const fx = diffX * k - vel[idx] * d;
         const fy = diffY * k - vel[idx + 1] * d;
         const fz = diffZ * k - vel[idx + 2] * d;
@@ -270,7 +303,6 @@ export class DeformationEngine {
         curr[idx + 1] += vel[idx + 1] * dt;
         curr[idx + 2] += vel[idx + 2] * dt;
       } else if (!this.activeContact) {
-        // Đã phục hồi hoàn toàn
         curr[idx] = orig[idx];
         curr[idx + 1] = orig[idx + 1];
         curr[idx + 2] = orig[idx + 2];
@@ -281,7 +313,7 @@ export class DeformationEngine {
     }
 
     let shouldPlayRelease = false;
-    if (!this.hasTriggeredReleaseSound && !this.activeContact && totalDisp > 6.0) {
+    if (!this.hasTriggeredReleaseSound && !this.activeContact && totalDisp > 5.5) {
       shouldPlayRelease = true;
       this.hasTriggeredReleaseSound = true;
     }
