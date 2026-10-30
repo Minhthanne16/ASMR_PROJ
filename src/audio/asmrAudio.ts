@@ -1,11 +1,14 @@
 import type { SquishyMaterialType, InteractionMode, ASMRSoundProfile } from '../types';
 
 /**
- * ASMR SOUND ENGINE
- * Chuyên biệt cho âm thanh:
- * 1. "Tiếng thở hút khí chậm rãi (Slow-Rise Whisper)" - shhhhhh... êm dịu cực chill
- * 2. "Giòn rụm lách tách (Crunchy ASMR)" - nano tape / wax crackle
- * 3. "Xốp mềm êm dịu (Soft Foam)" - memory foam cushion
+ * ASMR SOUND ENGINE - MULTI-LAYERED ACOUSTIC EXPERIENCE
+ * Kết hợp hoàn hảo:
+ * 1. LỚP ĐỆM XỐP ÊM RU BÊN DƯỚI (Cushion Body):
+ *    m trầm ấm của khối xốp dày được nén chặt dưới lòng bàn tay, mang lại chiều sâu và độ nảy xúc giác.
+ * 2. TIẾNG THỞ HÚT KHÍ CHẬM RÃI (Slow-Rise Whisper):
+ *    Khi thả tay, luồng khí thở êm dịu (shhhhhh...) từ từ hút vào các vi bọt xốp khi squishy phồng to trở lại.
+ * 3. HẠT VI KHÍ LÁCH TÁCH & KHÍ THỞ (Micro-Pore & Air Flow):
+ *    Tùy chọn phong cách giòn rụm (Crunchy) hoặc thở êm ru (Whisper).
  */
 class ASMRSoundEngine {
   private ctx: AudioContext | null = null;
@@ -16,7 +19,8 @@ class ASMRSoundEngine {
   // Pre-rendered acoustic buffers
   private whisperBreathBuffer: AudioBuffer | null = null;
   private crunchyNoiseBuffer: AudioBuffer | null = null;
-  private softFleshBuffer: AudioBuffer | null = null;
+  private cushionBodyBuffer: AudioBuffer | null = null;
+  private softTapBuffer: AudioBuffer | null = null;
 
   private lastSquishTime: number = 0;
   private lastTapTime: number = 0;
@@ -39,8 +43,7 @@ class ASMRSoundEngine {
 
       const sampleRate = this.ctx.sampleRate;
 
-      // 1. BUFFER 1: TIẾNG THỞ HÚT KHÍ CHẬM RÃI (Slow-Rise Whisper Buffer)
-      // Thuật toán tạo luồng khí thở stereo siêu êm, lọc tần số gắt, giữ âm "shhhhh" mềm như nhung
+      // 1. BUFFER 1: TIẾNG THỞ HÚT KHÍ CHẬM RÃI (Slow-Rise Whisper - shhhhh...)
       const whisperSec = 4.0;
       const whisperLen = Math.floor(sampleRate * whisperSec);
       this.whisperBreathBuffer = this.ctx.createBuffer(2, whisperLen, sampleRate);
@@ -55,7 +58,6 @@ class ASMRSoundEngine {
         const whiteL = Math.random() * 2 - 1;
         const whiteR = Math.random() * 2 - 1;
 
-        // Smooth pink/brown noise filter (không có tiếng lách cách gắt)
         pL0 = 0.992 * pL0 + whiteL * 0.05;
         pL1 = 0.97 * pL1 + whiteL * 0.12;
         pL2 = 0.86 * pL2 + whiteL * 0.22;
@@ -66,12 +68,31 @@ class ASMRSoundEngine {
         pR2 = 0.86 * pR2 + whiteR * 0.22;
         bR = (bR + 0.02 * whiteR) / 1.02;
 
-        // Kết hợp luồng khí thở mịn màng
         wL[i] = (pL0 + pL1 + pL2) * 0.05 + bL * 0.35;
         wR[i] = (pR0 + pR1 + pR2) * 0.05 + bR * 0.35;
       }
 
-      // 2. BUFFER 2: CRUNCHY NOISE BUFFER (Cho profile giòn rụm)
+      // 2. BUFFER 2: LỚP ĐỆM XỐP ÊM RU BÊN DƯỚI (CUSHION BODY BUFFER)
+      // Tạo âm trầm cộng hưởng xúc giác của khối xốp polyurethane dày đặc (80Hz - 220Hz)
+      const cushionSec = 2.5;
+      const cushionLen = Math.floor(sampleRate * cushionSec);
+      this.cushionBodyBuffer = this.ctx.createBuffer(2, cushionLen, sampleRate);
+      const cBodyL = this.cushionBodyBuffer.getChannelData(0);
+      const cBodyR = this.cushionBodyBuffer.getChannelData(1);
+
+      let brownLowL = 0, brownLowR = 0;
+      for (let i = 0; i < cushionLen; i++) {
+        const w1 = Math.random() * 2 - 1;
+        const w2 = Math.random() * 2 - 1;
+        brownLowL = (brownLowL + 0.04 * w1) / 1.04;
+        brownLowR = (brownLowR + 0.04 * w2) / 1.04;
+
+        // m trầm mềm mại, có chiều sâu cơ học như nén đệm mút cao su
+        cBodyL[i] = brownLowL * 0.75;
+        cBodyR[i] = brownLowR * 0.75;
+      }
+
+      // 3. BUFFER 3: CRUNCHY NOISE BUFFER (Cho hiệu ứng giòn rụm lách tách)
       const crunchSec = 3.5;
       const crunchLen = Math.floor(sampleRate * crunchSec);
       this.crunchyNoiseBuffer = this.ctx.createBuffer(2, crunchLen, sampleRate);
@@ -79,22 +100,22 @@ class ASMRSoundEngine {
       const cR = this.crunchyNoiseBuffer.getChannelData(1);
 
       for (let i = 0; i < crunchLen; i++) {
-        const grainL = Math.random() > 0.89 ? (Math.random() - 0.5) * 0.4 : 0;
-        const grainR = Math.random() > 0.89 ? (Math.random() - 0.5) * 0.4 : 0;
-        cL[i] = wL[i % whisperLen] * 0.3 + grainL;
-        cR[i] = wR[i % whisperLen] * 0.3 + grainR;
+        const grainL = Math.random() > 0.89 ? (Math.random() - 0.5) * 0.45 : 0;
+        const grainR = Math.random() > 0.89 ? (Math.random() - 0.5) * 0.45 : 0;
+        cL[i] = wL[i % whisperLen] * 0.25 + grainL;
+        cR[i] = wR[i % whisperLen] * 0.25 + grainR;
       }
 
-      // 3. BUFFER 3: SOFT FLESH TAP (Tiếng chạm đầu ngón tay)
+      // 4. BUFFER 4: SOFT FINGERTIP TAP
       const tapLen = Math.floor(sampleRate * 0.1);
-      this.softFleshBuffer = this.ctx.createBuffer(1, tapLen, sampleRate);
-      const tapData = this.softFleshBuffer.getChannelData(0);
+      this.softTapBuffer = this.ctx.createBuffer(1, tapLen, sampleRate);
+      const tapData = this.softTapBuffer.getChannelData(0);
       for (let i = 0; i < tapLen; i++) {
         const t = i / sampleRate;
         tapData[i] = Math.sin(2 * Math.PI * (70 - t * 150) * t) * Math.exp(-t * 60.0) * 0.35;
       }
     } catch (e) {
-      console.warn('Web Audio init failed:', e);
+      console.warn('Web Audio ASMR engine init failed:', e);
     }
   }
 
@@ -137,7 +158,7 @@ class ASMRSoundEngine {
    */
   public playTap(intensity: number = 0.5, panX: number = 0) {
     this.resume();
-    if (!this.ctx || !this.masterGain || this.isMuted || !this.softFleshBuffer) return;
+    if (!this.ctx || !this.masterGain || this.isMuted || !this.softTapBuffer) return;
 
     const now = this.ctx.currentTime;
     if (now - this.lastTapTime < 0.07) return;
@@ -145,7 +166,7 @@ class ASMRSoundEngine {
 
     const panner = this.createPanner(panX);
     const source = this.ctx.createBufferSource();
-    source.buffer = this.softFleshBuffer;
+    source.buffer = this.softTapBuffer;
     source.playbackRate.value = 0.95 + Math.random() * 0.15;
 
     const gain = this.ctx.createGain();
@@ -159,7 +180,10 @@ class ASMRSoundEngine {
   }
 
   /**
-   * 2. TIẾNG BÓP NÉN / XẢ KHÍ MỀM MẠI (Porous Sponge Compression)
+   * 2. BÓP NÉN ĐA TẦNG (Cushion Body + Surface Crunch/Whisper)
+   * KẾT HỢP ĐỒNG THỜI:
+   * - Lớp đệm xốp êm ru bên dưới (Cushion Body): mang lại độ trầm ấm, chiều sâu và độ nảy
+   * - Lớp bề mặt (Crunchy crackle hoặc Smooth air exhale)
    */
   public playSquish(
     intensity: number = 0.6,
@@ -172,63 +196,93 @@ class ASMRSoundEngine {
     if (!this.ctx || !this.masterGain || this.isMuted) return;
 
     const now = this.ctx.currentTime;
-    if (now - this.lastSquishTime < 0.06) return;
+    if (now - this.lastSquishTime < 0.055) return;
     this.lastSquishTime = now;
 
-    const clampedIntensity = Math.max(0.2, Math.min(1.0, intensity));
+    const clampedIntensity = Math.max(0.25, Math.min(1.0, intensity));
     const panner = this.createPanner(panX);
 
-    // Chạm ngón tay êm
-    this.playTap(clampedIntensity * 0.6, panX);
+    // Tiếng chạm ngón tay êm
+    this.playTap(clampedIntensity * 0.5, panX);
 
-    const buffer =
+    // 🌟 LỚP 1: LỚP ĐỆM XỐP ÊM RU BÊN DƯỚI (CUSHION BODY - ĐỘ NẢY & CHIỀU SÂU XÚC GIÁC)
+    // Tái hiện âm trầm của khối xốp dày được nén dưới lòng bàn tay
+    if (this.cushionBodyBuffer) {
+      const cushionSource = this.ctx.createBufferSource();
+      cushionSource.buffer = this.cushionBodyBuffer;
+      cushionSource.playbackRate.value = 0.85 + Math.random() * 0.15;
+      const cushionOffset = Math.random() * 1.0;
+
+      const cushionFilter = this.ctx.createBiquadFilter();
+      cushionFilter.type = 'lowpass';
+      // Tần số trầm ấm tạo cảm giác nén khối xốp đặc
+      cushionFilter.frequency.setValueAtTime(260 + clampedIntensity * 120, now);
+      cushionFilter.frequency.exponentialRampToValueAtTime(110, now + 0.25);
+      cushionFilter.Q.value = 1.2;
+
+      const cushionGain = this.ctx.createGain();
+      const cushionDuration = mode === 'poke' ? 0.2 : 0.32;
+      cushionGain.gain.setValueAtTime(0.0001, now);
+      // Nén êm ái, đầm tay
+      cushionGain.gain.linearRampToValueAtTime(0.42 * clampedIntensity, now + 0.025);
+      cushionGain.gain.exponentialRampToValueAtTime(0.0001, now + cushionDuration);
+
+      cushionSource.connect(cushionFilter);
+      cushionFilter.connect(cushionGain);
+      cushionGain.connect(panner);
+
+      cushionSource.start(now, cushionOffset, cushionDuration + 0.05);
+    }
+
+    // 🌟 LỚP 2: LỚP BỀ MẶT (Surface Texture - Giòn rụm lách tách hoặc xả khí thở)
+    const surfaceBuffer =
       soundProfile === 'crunchy' && this.crunchyNoiseBuffer
         ? this.crunchyNoiseBuffer
         : this.whisperBreathBuffer;
 
-    if (!buffer) return;
+    if (surfaceBuffer) {
+      const surfaceSource = this.ctx.createBufferSource();
+      surfaceSource.buffer = surfaceBuffer;
+      surfaceSource.playbackRate.value = 0.95 + Math.random() * 0.2;
+      const surfaceOffset = Math.random() * 1.5;
 
-    const source = this.ctx.createBufferSource();
-    source.buffer = buffer;
-    source.playbackRate.value = 0.95 + Math.random() * 0.15;
-    const offset = Math.random() * 1.5;
+      const surfaceFilter = this.ctx.createBiquadFilter();
 
-    const filter = this.ctx.createBiquadFilter();
+      if (soundProfile === 'crunchy') {
+        // Tiếng lách tách giòn tan
+        surfaceFilter.type = 'bandpass';
+        surfaceFilter.frequency.setValueAtTime(2100 + clampedIntensity * 400, now);
+        surfaceFilter.frequency.exponentialRampToValueAtTime(1200, now + 0.22);
+        surfaceFilter.Q.value = 1.8;
+      } else {
+        // Tiếng thở xả khí mút xốp
+        surfaceFilter.type = 'bandpass';
+        const center = materialType === 'glossy' ? 520 : (materialType === 'velvet' ? 380 : 440);
+        surfaceFilter.frequency.setValueAtTime(center + clampedIntensity * 180, now);
+        surfaceFilter.frequency.exponentialRampToValueAtTime(220, now + 0.24);
+        surfaceFilter.Q.value = 0.9;
+      }
 
-    if (soundProfile === 'crunchy') {
-      filter.type = 'bandpass';
-      filter.frequency.setValueAtTime(2200, now);
-      filter.frequency.exponentialRampToValueAtTime(1400, now + 0.22);
-      filter.Q.value = 1.6;
-    } else {
-      // Tiếng thở xả khí mút xốp (Soft Air Exhale)
-      filter.type = 'bandpass';
-      const center = materialType === 'glossy' ? 520 : (materialType === 'velvet' ? 380 : 440);
-      filter.frequency.setValueAtTime(center + clampedIntensity * 200, now);
-      filter.frequency.exponentialRampToValueAtTime(240, now + 0.24);
-      filter.Q.value = 0.9;
+      const surfaceGain = this.ctx.createGain();
+      const surfaceDuration = mode === 'poke' ? 0.18 : 0.26;
+      surfaceGain.gain.setValueAtTime(0.0001, now);
+      surfaceGain.gain.linearRampToValueAtTime(
+        (soundProfile === 'crunchy' ? 0.48 : 0.36) * clampedIntensity,
+        now + 0.02
+      );
+      surfaceGain.gain.exponentialRampToValueAtTime(0.0001, now + surfaceDuration);
+
+      surfaceSource.connect(surfaceFilter);
+      surfaceFilter.connect(surfaceGain);
+      surfaceGain.connect(panner);
+
+      surfaceSource.start(now, surfaceOffset, surfaceDuration + 0.05);
     }
-
-    const gain = this.ctx.createGain();
-    const duration = mode === 'poke' ? 0.18 : 0.26;
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(
-      (soundProfile === 'crunchy' ? 0.45 : 0.38) * clampedIntensity,
-      now + 0.02
-    );
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-
-    source.connect(filter);
-    filter.connect(gain);
-    gain.connect(panner);
-
-    source.start(now, offset, duration + 0.05);
   }
 
   /**
    * 3. 🌟 TIẾNG THỞ HÚT KHÍ CHẬM RÃI (SLOW-RISE WHISPER - shhhhhh...)
-   * Trọng tâm chính: Khi thả tay ra, âm thanh hút khí êm dịu (shhhhhh...)
-   * phát ra kéo dài khi squishy từ từ nở phồng to trở lại!
+   * Khi thả tay ra, âm thanh hút khí êm dịu (shhhhhh...) phát ra kéo dài khi squishy từ từ nở phồng to trở lại!
    */
   public playRelease(
     durationSec: number = 2.5,
@@ -247,24 +301,19 @@ class ASMRSoundEngine {
     breathSource.playbackRate.value = 0.92 + Math.random() * 0.12;
     const offset = Math.random() * 1.0;
 
-    // Filter quét tần số mô phỏng tiếng thở bọt xốp hít khí
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'bandpass';
     const startFreq = 220;
     const peakFreq = materialType === 'glossy' ? 640 : (materialType === 'velvet' ? 460 : 540);
 
     filter.frequency.setValueAtTime(startFreq, now);
-    // Tần số từ từ dâng lên khi bọt xốp nở rộng, rồi nhẹ nhàng lắng xuống
     filter.frequency.exponentialRampToValueAtTime(peakFreq, now + soundDuration * 0.4);
     filter.frequency.exponentialRampToValueAtTime(260, now + soundDuration);
-    filter.Q.value = 0.85; // Cực kỳ êm, không chói
+    filter.Q.value = 0.85;
 
-    // Envelope âm lượng: Phồng từ từ, đạt đỉnh rồi tan biến êm ru
     const gain = this.ctx.createGain();
     gain.gain.setValueAtTime(0.0001, now);
-    // Fade in êm ái
     gain.gain.linearRampToValueAtTime(0.28, now + soundDuration * 0.35);
-    // Fade out từ từ theo độ phồng
     gain.gain.exponentialRampToValueAtTime(0.0001, now + soundDuration);
 
     breathSource.connect(filter);

@@ -89,8 +89,8 @@ export const CustomizerPanel: React.FC<CustomizerPanelProps> = ({
   ];
 
   const soundProfiles: { id: ASMRSoundProfile; label: string; desc: string; icon: string }[] = [
-    { id: 'slow_rise_whisper', label: 'Thở Hút Khí (Slow-Rise Whisper)', desc: 'Tiếng thở hút khí êm dịu (shhhhh...)', icon: '💨' },
-    { id: 'crunchy', label: 'Giòn Rụm Lách Tách (Crunchy ASMR)', desc: 'Tiếng giòn rụm lách tách như video', icon: '🫧' },
+    { id: 'slow_rise_whisper', label: 'Đệm Xốp & Thở Chậm (Cushion & Whisper)', desc: 'Lớp đệm xốp êm ru kết hợp tiếng thở hút khí (shhhhh...)', icon: '💨' },
+    { id: 'crunchy', label: 'Giòn Rụm & Đệm Xốp (Crunchy & Cushion)', desc: 'Lớp đệm xốp trầm ấm đi cùng tiếng lách tách giòn rụm', icon: '🫧' },
   ];
 
   const bgColors = [
